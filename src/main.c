@@ -67,15 +67,25 @@
 #define BUZ_PIO_IDX       13                    // ID do Buzzer no PIO
 #define BUZ_PIO_IDX_MASK  (1u << BUZ_PIO_IDX)   // Mascara para CONTROLARMOS o Buzzer
 
+
+#define new_song(song, n, t)                    \
+	{                                           \
+		song.notes = n;                         \
+		song.tempos = t;                        \
+		song.length = sizeof(n) / sizeof(n[0]); \
+	}
+
+
+
 /************************************************************************/
 /* structs                                                              */
 /************************************************************************/
 
 typedef struct {
-	int* songs[2];
-	int* tempos[2];
-	int lengths[2];
-} musica;
+	const int* notes;
+	const int* tempos;
+	const int length;
+} song;
 
 /************************************************************************/
 /* prototypes                                                           */
@@ -161,14 +171,15 @@ int main(void){
 	// inicializa sistema e IOs
 	init();
 	
-	musica m;
-	m.songs[0] = &s1;
-	m.songs[1] = &s2;
-	m.lengths[0] = sizeof(s1)/sizeof(int);
-	m.lengths[1] = sizeof(s2)/sizeof(int);
-	m.tempos[0] = &t1;
-	m.tempos[1] = &t2;
+	song s1, s2;
+
+	new_song(s1, n1, t1);
+	new_song(s2, n2, t2);
+
+	const int n_songs = 2;
 	int choice = 0;
+	song songs[n_songs] = {s1, s2};
+	song cur_song;
 
 	// super loop
 	// aplicacoes embarcadas não devem sair do while(1).
@@ -177,11 +188,13 @@ int main(void){
 			pio_set(PIOA, LED1_PIO_IDX_MASK);
 			delay_ms(100);
 			pio_clear(PIOA, LED1_PIO_IDX_MASK);
-			
+
 			musica:;
-			int len = m.lengths[choice];
-			int* s = m.songs[choice];
-			int* t = m.tempos[choice];
+			cur_song = songs[choice];
+			const int len = cur_song.length;
+			const int* s = cur_song.notes;
+			const int* t = cur_song.tempos;
+
 			for (int i = 0; i < len; i++){
 				if (pio_get(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK) == 0){
 					choice = !choice;

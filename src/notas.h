@@ -93,7 +93,7 @@
 #define NOTE_D8 4699
 #define NOTE_DS8 4978
 
-const int s1[] = {
+const int n1[] = {
     NOTE_E7, NOTE_E7, 0, NOTE_E7,
     0, NOTE_C7, NOTE_E7, 0,
     NOTE_G7, 0, 0, 0,
@@ -144,7 +144,7 @@ const int t1[] = {
     12, 12, 12, 12,
     12, 12};
 
-const int s2[] = {
+const int n2[] = {
     NOTE_C4, NOTE_C5, NOTE_A3, NOTE_A4,
     NOTE_AS3, NOTE_AS4, 0,
     0,
