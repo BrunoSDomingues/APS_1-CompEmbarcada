@@ -1,3 +1,5 @@
+// vim:tabstop=4:shiftwidth=4:noexpandtab
+
 /**
  * 5o Semestre - Engenharia da Computacao
  * APS 1 - Musical
@@ -90,6 +92,7 @@ typedef struct
 void init(void);
 void tone(int freq, int dur);
 void play(int note, int tempo, int compass);
+void next_song(int *choice, int n_songs);
 
 /************************************************************************/
 /* interrupcoes                                                         */
@@ -143,7 +146,7 @@ void tone(int freq, int dur)
 	{
 		pio_set(PIOC, LED_PIO_IDX_MASK);   // Acende o LED
 		pio_set(PIOC, BUZ_PIO_IDX_MASK);   // Coloca som no buzzer
-		delay_us(t);					   // Delay por software de t us
+		delay_us(t);                       // Delay por software de t us
 		pio_clear(PIOC, LED_PIO_IDX_MASK); // Apaga o LED
 		pio_clear(PIOC, BUZ_PIO_IDX_MASK); // Tira som do buzzer
 		delay_us(t);
