@@ -1,3 +1,5 @@
+// vim:tabstop=4:shiftwidth=4:noexpandtab
+
 /**
  * 5o Semestre - Engenharia da Computacao
  * APS 1 - Musical
@@ -67,15 +69,25 @@
 #define BUZ_PIO_IDX       13                    // ID do Buzzer no PIO
 #define BUZ_PIO_IDX_MASK  (1u << BUZ_PIO_IDX)   // Mascara para CONTROLARMOS o Buzzer
 
+
+#define new_song(song, n, t)                    \
+	{                                           \
+		song.notes = n;                         \
+		song.tempos = t;                        \
+		song.length = sizeof(n) / sizeof(n[0]); \
+	}
+
+
+
 /************************************************************************/
 /* structs                                                              */
 /************************************************************************/
 
 typedef struct {
-	int* songs[2];
-	int* tempos[2];
-	int lengths[2];
-} musica;
+	const int* notes;
+	const int* tempos;
+	const int length;
+} song;
 
 /************************************************************************/
 /* prototypes                                                           */
@@ -131,24 +143,27 @@ void tone(int freq, int dur){
 	// x loops - 10e3 us
 	// x = freq/1000
 	int j = (dur * freq)/1000;
-	for(int i = 0; i <= j; i++){
-		pio_set(PIOC, LED_PIO_IDX_MASK);	// Acende o LED
-		pio_set(PIOC, BUZ_PIO_IDX_MASK);      // Coloca som no buzzer
+	for(int i = 0; i < j; i++){
+		pio_set(PIOC, LED_PIO_IDX_MASK);    // Acende o LED
+		pio_set(PIOC, BUZ_PIO_IDX_MASK);    // Coloca som no buzzer
 		delay_us(t);                        // Delay por software de t us
-		pio_clear(PIOC, LED_PIO_IDX_MASK);	// Apaga o LED
-		pio_clear(PIOC, BUZ_PIO_IDX_MASK);    // Tira som do buzzer
+		pio_clear(PIOC, LED_PIO_IDX_MASK);  // Apaga o LED
+		pio_clear(PIOC, BUZ_PIO_IDX_MASK);  // Tira som do buzzer
 		delay_us(t);
 	}
 }
 
 void play(int note, int tempo, int compass){
 	int noteDuration = compass/tempo;
-		
+
 	tone(note, noteDuration);
 	int pauseBetweenNotes = noteDuration * 1.30;
 	delay_ms(pauseBetweenNotes);
-		
-	tone(0, noteDuration);
+}
+
+void next_song(int* choice, int n_songs) {
+	*choice = (*choice + 1) % n_songs;
+	// TODO Mudar algum indicador aqui
 }
 
 /************************************************************************/
@@ -160,36 +175,48 @@ void play(int note, int tempo, int compass){
 int main(void){
 	// inicializa sistema e IOs
 	init();
-	
-	musica m;
-	m.songs[0] = &s1;
-	m.songs[1] = &s2;
-	m.lengths[0] = sizeof(s1)/sizeof(int);
-	m.lengths[1] = sizeof(s2)/sizeof(int);
-	m.tempos[0] = &t1;
-	m.tempos[1] = &t2;
+
+	song s1, s2;
+
+	new_song(s1, n1, t1);
+	new_song(s2, n2, t2);
+
+	const int n_songs = 2;
 	int choice = 0;
+	song songs[n_songs] = {s1, s2};
+	song cur_song;
 
 	// super loop
 	// aplicacoes embarcadas não devem sair do while(1).
+
+	// Botão play  (BUTTON 1)
+	// Botão pause (BUTTON 2)
+	// Botão next  (BUTTON 3)
 	while (1){
-		if (pio_get(BUT1_PIO, PIO_INPUT, BUT1_PIO_IDX_MASK) == 0){
+		if (pio_get(BUT1_PIO, PIO_INPUT, BUT1_PIO_IDX_MASK) == 0) {  // Play
 			pio_set(PIOA, LED1_PIO_IDX_MASK);
 			delay_ms(100);
 			pio_clear(PIOA, LED1_PIO_IDX_MASK);
-			
+
 			musica:;
-			int len = m.lengths[choice];
-			int* s = m.songs[choice];
-			int* t = m.tempos[choice];
+			cur_song = songs[choice];
+			const int len = cur_song.length;
+			const int* s = cur_song.notes;
+			const int* t = cur_song.tempos;
+
 			for (int i = 0; i < len; i++){
-				if (pio_get(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK) == 0){
-					choice = !choice;
+				if (pio_get(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK) == 0) {  // Change
+					next_song(&choice, n_songs);
 					delay_ms(300);
 					goto musica;
 				}
-				play(s[i],t[i],800);
+				play(s[i], t[i], 800);
 			}
+		}
+
+		if (pio_get(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK) == 0) {  // Change
+			next_song(&choice, n_songs);
+			delay_ms(300);
 		}
 	}
 	return 0;
