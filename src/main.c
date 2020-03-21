@@ -82,7 +82,7 @@ typedef struct
 {
 	int *notes;
 	int *tempos;
-	int length;
+	size_t length;
 } song;
 
 /************************************************************************/
@@ -92,11 +92,24 @@ typedef struct
 void init(void);
 void tone(int freq, int dur);
 void play(int note, int tempo, int compass);
-void next_song(int *choice, int n_songs);
+void next_song(int *choice, int n_songs, song *cur_song, song *songs);
+void BUT1_callback();
+void BUT3_callback();
 
 /************************************************************************/
 /* interrupcoes                                                         */
 /************************************************************************/
+
+volatile char BUT1_flag;
+volatile char BUT3_flag;
+
+void BUT1_callback() {
+	BUT1_flag = 1;
+}
+
+void BUT3_callback() {
+	BUT3_flag = 1;
+}
 
 /************************************************************************/
 /* funcoes                                                              */
@@ -132,12 +145,39 @@ void init(void)
 
 	pio_set_input(BUT3_PIO_ID, BUT3_PIO_IDX_MASK, PIO_DEFAULT);
 	pio_pull_up(BUT3_PIO_ID, BUT3_PIO_IDX_MASK, 1);
+
+
+	// Interrupt
+	pio_handler_set(
+		BUT1_PIO_ID,
+		BUT1_PIO_ID,
+		BUT1_PIO_IDX_MASK,
+		PIO_IT_FALL_EDGE,
+		BUT1_callback
+	);
+
+	pio_handler_set(
+		BUT3_PIO_ID,
+		BUT3_PIO_ID,
+		BUT3_PIO_IDX_MASK,
+		PIO_IT_FALL_EDGE,
+		BUT3_callback
+	);
+
+	NVIC_EnableIRQ(BUT1_PIO_ID);
+	NVIC_SetPriority(BUT1_PIO_ID, 1);  // Priority 1
+
+	NVIC_EnableIRQ(BUT3_PIO_ID);
+	NVIC_SetPriority(BUT3_PIO_ID, 1);  // Priority 1
+
+	pio_enable_interrupt(BUT1_PIO, BUT1_PIO_IDX_MASK);
+	pio_enable_interrupt(BUT3_PIO, BUT3_PIO_IDX_MASK);
 }
 
 void tone(int freq, int dur)
 {
 	// recebe uma frequência em Hertz e uma duração em milisegundos
-	int t = 500000 / freq; // Tempo em us de pausa: 10e6/(2 * freq)
+	int t = 500000 / freq;  // Tempo em us de pausa: 10e6/(2 * freq)
 	// 1 loop - 10e6/freq us
 	// x loops - 10e3 us
 	// x = freq/1000
@@ -162,9 +202,10 @@ void play(int note, int tempo, int compass)
 	delay_ms(pauseBetweenNotes);
 }
 
-void next_song(int *choice, int n_songs)
+void next_song(int *choice, int n_songs, song *cur_song, song *songs)
 {
 	*choice = (*choice + 1) % n_songs;
+	*cur_song = songs[*choice];  // TODO check
 	// TODO Mudar algum indicador aqui
 }
 
@@ -181,6 +222,7 @@ int main(void)
 
 	int n_songs = 2;
 	int choice = 0;
+	char pause = 1;
 
 	song s1, s2, cur_song;
 
@@ -189,43 +231,36 @@ int main(void)
 
 	song songs[] = {s1, s2};
 
-	// super loop
-	// aplicacoes embarcadas não devem sair do while(1).
+	size_t i = 0;
 
-	// Botão play  (BUTTON 1)
-	// Botão pause (BUTTON 2)
-	// Botão next  (BUTTON 3)
-	while (1)
-	{
-		if (pio_get(BUT1_PIO, PIO_INPUT, BUT1_PIO_IDX_MASK) == 0)
-		{ // Play
-			pio_set(PIOA, LED1_PIO_IDX_MASK);
-			delay_ms(100);
-			pio_clear(PIOA, LED1_PIO_IDX_MASK);
+	// Botão play/pause  (BUTTON 1)
+	// Botão next        (BUTTON 3)
 
-		musica:;
-			cur_song = songs[choice];
-			const int len = cur_song.length;
-			const int *s = cur_song.notes;
-			const int *t = cur_song.tempos;
+	while (1) {
+		if (pause) {
+			pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);  // Sleep until interrupt happens
+		}
 
-			for (int i = 0; i < len; i++)
-			{
-				if (pio_get(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK) == 0)
-				{ // Change
-					next_song(&choice, n_songs);
-					delay_ms(300);
-					goto musica;
-				}
-				play(s[i], t[i], 800);
+		if (BUT3_flag) {  // Change
+			next_song(&choice, n_songs, &cur_song, songs);
+			BUT3_flag = 0;
+		}
+
+		if (BUT1_flag) {  // Pause or play
+			pause = !pause;
+			BUT1_flag = 0;
+		}
+
+		if (!pause) {
+			if (i < cur_song.length) {
+				play(cur_song.notes[i], cur_song.tempos[i], 800);
+				i++;
+			} else {
+				pause = 0;
+				i = 0;
 			}
 		}
 
-		if (pio_get(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK) == 0)
-		{ // Change
-			next_song(&choice, n_songs);
-			delay_ms(300);
-		}
 	}
 	return 0;
 }
