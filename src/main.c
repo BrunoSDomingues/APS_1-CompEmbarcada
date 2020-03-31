@@ -127,17 +127,10 @@ void init(void)
 	// Ativa o PIO na qual o LED foi conectado
 	// para que possamos controlar o LED e os botões
 	pmc_enable_periph_clk(LED_PIO_ID);
-	pmc_enable_periph_clk(LED1_PIO_ID);
-	pmc_enable_periph_clk(LED2_PIO_ID);
-	pmc_enable_periph_clk(LED3_PIO_ID);
 
-	//Inicializa leds como saida
+	//Inicializa LED como saida
 	pio_set_output(LED_PIO, LED_PIO_IDX_MASK, 0, 0, 0);
-	pio_configure(LED1_PIO, PIO_OUTPUT_0, LED1_PIO_IDX_MASK, PIO_DEFAULT);
-	pio_configure(LED2_PIO, PIO_OUTPUT_0, LED2_PIO_IDX_MASK, PIO_DEFAULT);
-	pio_configure(LED3_PIO, PIO_OUTPUT_0, LED3_PIO_IDX_MASK, PIO_DEFAULT);
 	
-
 	// Inicializa PIO dos botoes
 	pmc_enable_periph_clk(BUT1_PIO_ID);
 	pmc_enable_periph_clk(BUT2_PIO_ID);
@@ -148,9 +141,6 @@ void init(void)
 	pio_configure(BUT2_PIO, PIO_INPUT, BUT2_PIO_IDX_MASK, PIO_PULLUP);
 	pio_configure(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK, PIO_PULLUP);
 
-
-
-
 	NVIC_EnableIRQ(BUT1_PIO_ID);
 	NVIC_SetPriority(BUT1_PIO_ID, 6);  // Priority 1
 
@@ -160,29 +150,13 @@ void init(void)
 	pio_enable_interrupt(BUT1_PIO, BUT1_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT3_PIO, BUT3_PIO_IDX_MASK);
 	
-	//pio_set_debounce_filter(BUT1_PIO, BUT1_PIO_IDX_MASK, 30);
-	//pio_set_debounce_filter(BUT3_PIO, BUT3_PIO_IDX_MASK, 30);
-	
 	// Incializacao do buzzer
 	pmc_enable_periph_clk(BUZ_PIO_ID);
 	pio_set_output(BUZ_PIO, BUZ_PIO_IDX_MASK, 0, 0, 0);
 
-		// Interrupt
-		pio_handler_set(
-		BUT1_PIO,
-		BUT1_PIO_ID,
-		BUT1_PIO_IDX_MASK,
-		PIO_IT_FALL_EDGE,
-		BUT1_callback
-		);
-
-		pio_handler_set(
-		BUT3_PIO,
-		BUT3_PIO_ID,
-		BUT3_PIO_IDX_MASK,
-		PIO_IT_FALL_EDGE,
-		BUT3_callback
-		);
+	// Interrupt
+	pio_handler_set(BUT1_PIO, BUT1_PIO_ID, BUT1_PIO_IDX_MASK, PIO_IT_FALL_EDGE, BUT1_callback);
+	pio_handler_set(BUT3_PIO, BUT3_PIO_ID, BUT3_PIO_IDX_MASK, PIO_IT_FALL_EDGE, BUT3_callback);
 }
 
 void tone(int freq, int dur)
@@ -207,7 +181,6 @@ void tone(int freq, int dur)
 void play(int note, int tempo, int compass)
 {
 	int noteDuration = compass / tempo;
-
 	tone(note, noteDuration);
 	int pauseBetweenNotes = noteDuration * 1.30;
 	delay_ms(pauseBetweenNotes);
@@ -216,8 +189,7 @@ void play(int note, int tempo, int compass)
 void next_song(int *choice, int n_songs, song *cur_song, song *songs)
 {
 	*choice = (*choice + 1) % n_songs;
-	*cur_song = songs[*choice];  // TODO check
-	// TODO Mudar algum indicador aqui
+	*cur_song = songs[*choice];
 }
 
 /************************************************************************/
@@ -233,14 +205,15 @@ int main(void)
 
 	int n_songs = 2;
 	int choice = 0;
-	char pause = 1;
-
-	song s1, s2, cur_song;
+	unsigned char pause = 1;
+	
+	song s1, s2, s3, cur_song;
 
 	new_song(s1, n1, t1);
 	new_song(s2, n2, t2);
+	new_song(s3, n3, t3);
 
-	song songs[] = {s1, s2};
+	song songs[] = {s1, s2, s3};
 
 	size_t i = 0;
 	cur_song = songs[0];
@@ -254,24 +227,19 @@ int main(void)
 	while (1) {
 		if (pause) {
 			pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);  // Sleep until interrupt happens
-			pause = 0;
 		}
 
 		if (BUT3_flag) {  // Change
 			BUT3_flag = 0;
-			delay_ms(200);
-			if(BUT3_flag) {
 			next_song(&choice, n_songs, &cur_song, songs);
-			}
+			i = 0;
 		}
 
-		if (BUT1_flag) {  // Pause or play
-			
+		if (BUT1_flag) {  // Pause or play	
+			if(pause == 1) pause = 0;
+			else pause = 1;
 			BUT1_flag = 0;
-			delay_ms(200);
-			if(BUT1_flag) {
-				pause = 1;
-			}
+			
 		}
 
 		if (!pause) {
