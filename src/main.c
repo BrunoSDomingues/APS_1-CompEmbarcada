@@ -67,6 +67,7 @@ typedef struct
 	int *notes;
 	int *tempos;
 	size_t length;
+	char *title;
 } song;
 
 /************************************************************************/
@@ -77,7 +78,9 @@ void init(void);
 void tone(int freq, int dur);
 void play(int note, int tempo, int compass);
 void next_song(int *choice, int n_songs, song *cur_song, song *songs);
+void prev_song(int *choice, int n_songs, song *cur_song, song *songs);
 void BUT1_callback();
+void BUT2_callback();
 void BUT3_callback();
 
 /************************************************************************/
@@ -85,11 +88,17 @@ void BUT3_callback();
 /************************************************************************/
 
 volatile char BUT1_flag = 0;
+volatile char BUT2_flag = 0;
 volatile char BUT3_flag = 0;
 
 void BUT1_callback(void)
 {
 	BUT1_flag = 1;
+}
+
+void BUT2_callback(void)
+{
+	BUT2_flag = 1;
 }
 
 void BUT3_callback(void)
@@ -178,6 +187,16 @@ void next_song(int *choice, int n_songs, song *cur_song, song *songs)
 	*cur_song = songs[*choice];
 }
 
+void prev_song(int *choice, int n_songs, song *cur_song, song *songs)
+{
+	if (*choice == 0) {
+		*choice = n_songs - 1;
+		} else {
+		*choice = *choice - 1;
+	}
+	*cur_song = songs[*choice];
+}
+
 /************************************************************************/
 /* Main                                                                 */
 /************************************************************************/
@@ -187,7 +206,10 @@ void next_song(int *choice, int n_songs, song *cur_song, song *songs)
 int main(void)
 {
 	// inicializa sistema e IOs
+	board_init();
+	sysclk_init();
 	init();
+	delay_init();
 
 	const int n_songs = 3;
 	int choice = 0;
@@ -196,28 +218,49 @@ int main(void)
 	song s1, s2, s3, cur_song;
 
 	new_song(s1, n1, t1);
+	s1.title = &"Mario 1";
+	
 	new_song(s2, n2, t2);
+	s2.title = &"Mario 2";
+	
 	new_song(s3, n3, t3);
+	s3.title = &"Take on Me";
 
 	song songs[] = {s1, s2, s3};
 
 	size_t i = 0;
 	cur_song = songs[0];
 
+	
+	
 	// Botão play/pause  (BUTTON 1)
-	// Botão next        (BUTTON 3)
-
 	BUT1_flag = 0;
+	// Botão previous	 (BUTTON 2)
+	BUT2_flag = 0;
+	// Botão next        (BUTTON 3)
 	BUT3_flag = 0;
+	
+	gfx_mono_ssd1306_init();
+	gfx_mono_draw_string(songs[choice].title, 10, 10, &sysfont);
 
 	while (1)
 	{
 		if (pause) pmc_sleep(SAM_PM_SMODE_SLEEP_WFI); // Sleep until interrupt happens
+		
+		if (BUT2_flag){ // Change
+			BUT2_flag = 0;
+			prev_song(&choice, n_songs, &cur_song, songs);
+			i = 0;
+			gfx_mono_draw_string("           ", 10, 10, &sysfont);
+			gfx_mono_draw_string(songs[choice].title, 10, 10, &sysfont);
+		}
 
 		if (BUT3_flag){ // Change
 			BUT3_flag = 0;
 			next_song(&choice, n_songs, &cur_song, songs);
 			i = 0;
+			gfx_mono_draw_string("           ", 10, 10, &sysfont);
+			gfx_mono_draw_string(songs[choice].title, 10, 10, &sysfont);
 		}
 
 		if (BUT1_flag){ // Pause or play
