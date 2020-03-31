@@ -11,12 +11,13 @@
 
 #include "asf.h"
 #include "notas.h"
+#include "gfx_mono_ug_2832hsweg04.h"
+#include "gfx_mono_text.h"
+#include "sysfont.h"
 
 /************************************************************************/
 /* defines                                                              */
 /************************************************************************/
-
-// LEDs
 
 // LED do SAME70
 #define LED_PIO PIOC						// periferico que controla o LED
@@ -24,33 +25,15 @@
 #define LED_PIO_IDX 8						// ID do LED no PIO
 #define LED_PIO_IDX_MASK (1 << LED_PIO_IDX) // Mascara para CONTROLARMOS o LED
 
-// LED do play (LED1)
-#define LED1_PIO PIOA
-#define LED1_PIO_ID ID_PIOA
-#define LED1_PIO_IDX 0
-#define LED1_PIO_IDX_MASK (1u << LED1_PIO_IDX)
-
-// LED do pause (LED2)
-#define LED2_PIO PIOC
-#define LED2_PIO_ID ID_PIOC
-#define LED2_PIO_IDX 30
-#define LED2_PIO_IDX_MASK (1u << LED2_PIO_IDX)
-
-// LED do next (LED3)
-#define LED3_PIO PIOB
-#define LED3_PIO_ID ID_PIOB
-#define LED3_PIO_IDX 2
-#define LED3_PIO_IDX_MASK (1 << LED3_PIO_IDX)
-
 // Botoes
 
-// Botao play (BUTTON 1)
+// Botao play/pause (BUTTON 1)
 #define BUT1_PIO PIOD
 #define BUT1_PIO_ID ID_PIOD
 #define BUT1_PIO_IDX 28
 #define BUT1_PIO_IDX_MASK (1u << BUT1_PIO_IDX)
 
-// Botao pause (BUTTON 2)
+// Botao previous (BUTTON 2)
 #define BUT2_PIO PIOC
 #define BUT2_PIO_ID 12
 #define BUT2_PIO_IDX 31
@@ -68,11 +51,12 @@
 #define BUZ_PIO_IDX 13						 // ID do Buzzer no PIO
 #define BUZ_PIO_IDX_MASK (1u << BUZ_PIO_IDX) // Mascara para CONTROLARMOS o Buzzer
 
-#define new_song(song, n, t){                   \
+#define new_song(song, n, t)                    \
+	{                                           \
 		song.notes = n;                         \
 		song.tempos = t;                        \
 		song.length = sizeof(n) / sizeof(n[0]); \
-}
+	}
 
 /************************************************************************/
 /* structs                                                              */
@@ -103,11 +87,13 @@ void BUT3_callback();
 volatile char BUT1_flag = 0;
 volatile char BUT3_flag = 0;
 
-void BUT1_callback(void) {
+void BUT1_callback(void)
+{
 	BUT1_flag = 1;
 }
 
-void BUT3_callback(void) {
+void BUT3_callback(void)
+{
 	BUT3_flag = 1;
 }
 
@@ -130,7 +116,7 @@ void init(void)
 
 	//Inicializa LED como saida
 	pio_set_output(LED_PIO, LED_PIO_IDX_MASK, 0, 0, 0);
-	
+
 	// Inicializa PIO dos botoes
 	pmc_enable_periph_clk(BUT1_PIO_ID);
 	pmc_enable_periph_clk(BUT2_PIO_ID);
@@ -142,14 +128,14 @@ void init(void)
 	pio_configure(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK, PIO_PULLUP);
 
 	NVIC_EnableIRQ(BUT1_PIO_ID);
-	NVIC_SetPriority(BUT1_PIO_ID, 6);  // Priority 1
+	NVIC_SetPriority(BUT1_PIO_ID, 6); // Priority 1
 
 	NVIC_EnableIRQ(BUT3_PIO_ID);
-	NVIC_SetPriority(BUT3_PIO_ID, 5);  // Priority 1
+	NVIC_SetPriority(BUT3_PIO_ID, 5); // Priority 1
 
 	pio_enable_interrupt(BUT1_PIO, BUT1_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT3_PIO, BUT3_PIO_IDX_MASK);
-	
+
 	// Incializacao do buzzer
 	pmc_enable_periph_clk(BUZ_PIO_ID);
 	pio_set_output(BUZ_PIO, BUZ_PIO_IDX_MASK, 0, 0, 0);
@@ -162,7 +148,7 @@ void init(void)
 void tone(int freq, int dur)
 {
 	// recebe uma frequência em Hertz e uma duração em milisegundos
-	int t = 500000 / freq;  // Tempo em us de pausa: 10e6/(2 * freq)
+	int t = 500000 / freq; // Tempo em us de pausa: 10e6/(2 * freq)
 	// 1 loop - 10e6/freq us
 	// x loops - 10e3 us
 	// x = freq/1000
@@ -171,7 +157,7 @@ void tone(int freq, int dur)
 	{
 		pio_set(PIOC, LED_PIO_IDX_MASK);   // Acende o LED
 		pio_set(PIOC, BUZ_PIO_IDX_MASK);   // Coloca som no buzzer
-		delay_us(t);                       // Delay por software de t us
+		delay_us(t);					   // Delay por software de t us
 		pio_clear(PIOC, LED_PIO_IDX_MASK); // Apaga o LED
 		pio_clear(PIOC, BUZ_PIO_IDX_MASK); // Tira som do buzzer
 		delay_us(t);
@@ -203,10 +189,10 @@ int main(void)
 	// inicializa sistema e IOs
 	init();
 
-	int n_songs = 2;
+	const int n_songs = 3;
 	int choice = 0;
 	unsigned char pause = 1;
-	
+
 	song s1, s2, s3, cur_song;
 
 	new_song(s1, n1, t1);
@@ -220,38 +206,36 @@ int main(void)
 
 	// Botão play/pause  (BUTTON 1)
 	// Botão next        (BUTTON 3)
-	
+
 	BUT1_flag = 0;
 	BUT3_flag = 0;
 
-	while (1) {
-		if (pause) {
-			pmc_sleep(SAM_PM_SMODE_SLEEP_WFI);  // Sleep until interrupt happens
-		}
+	while (1)
+	{
+		if (pause) pmc_sleep(SAM_PM_SMODE_SLEEP_WFI); // Sleep until interrupt happens
 
-		if (BUT3_flag) {  // Change
+		if (BUT3_flag){ // Change
 			BUT3_flag = 0;
 			next_song(&choice, n_songs, &cur_song, songs);
 			i = 0;
 		}
 
-		if (BUT1_flag) {  // Pause or play	
-			if(pause == 1) pause = 0;
+		if (BUT1_flag){ // Pause or play
+			if (pause == 1) pause = 0;
 			else pause = 1;
 			BUT1_flag = 0;
-			
 		}
 
-		if (!pause) {
-			if (i < cur_song.length) {
+		if (!pause){
+			if (i < cur_song.length){
 				play(cur_song.notes[i], cur_song.tempos[i], 800);
 				i++;
-			} else {
+			}
+			else {
 				pause = 0;
 				i = 0;
 			}
 		}
-
 	}
 	return 0;
 }
