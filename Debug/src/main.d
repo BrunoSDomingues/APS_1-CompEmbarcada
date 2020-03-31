@@ -152,25 +152,22 @@ src/main.d src/main.o: ../src/main.c ../src/asf.h \
  ../src/ASF/sam/drivers/pmc/pmc.h ../src/ASF/common/services/clock/pll.h \
  ../src/ASF/common/services/clock/same70/pll.h \
  ../src/ASF/common/services/delay/sam/cycle_counter.h \
- ../src/ASF/common/services/gfx/gfx.h \
- c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-none-eabi\include\assert.h \
- ../src/ASF/common/services/gfx/gfx_ili9341_sdt028atft.h \
- ../src/ASF/common/components/display/ili9341/ili9341.h \
- ../src/ASF/common/services/ioport/ioport.h \
- ../src/ASF/common/services/ioport/sam/ioport_pio.h \
- ../src/config/conf_ili9341.h \
- ../src/ASF/common/services/spi/sam_spi/spi_master.h \
- ../src/ASF/sam/drivers/spi/spi.h ../src/config/conf_spi_master.h \
- ../src/ASF/common/services/gfx/gfx_generic.h \
- ../src/ASF/common/services/gfx/sysfont.h ../src/config/conf_sysfont.h \
- ../src/ASF/common/services/gfx/gfx.h \
- ../src/ASF/common/services/gfx/gfx_text.h \
  ../src/ASF/common/services/gpio/gpio.h \
  ../src/ASF/common/services/gpio/sam_gpio/sam_gpio.h \
- ../src/ASF/sam/drivers/pio/pio.h ../src/ASF/sam/drivers/mpu/mpu.h \
- ../src/ASF/sam/drivers/pmc/sleep.h ../src/ASF/sam/utils/fpu/fpu.h \
+ ../src/ASF/sam/drivers/pio/pio.h \
+ ../src/ASF/common/services/ioport/ioport.h \
+ ../src/ASF/common/services/ioport/sam/ioport_pio.h \
+ ../src/ASF/sam/drivers/mpu/mpu.h ../src/ASF/sam/drivers/pmc/sleep.h \
+ ../src/ASF/sam/utils/fpu/fpu.h \
  ../src/ASF/sam/boards/same70_xplained/led.h \
- ../src/ASF/sam/drivers/pio/pio_handler.h ../src/notas.h
+ ../src/ASF/sam/drivers/spi/spi.h \
+ ../src/ASF/sam/drivers/pio/pio_handler.h ../src/notas.h \
+ ../src/oled/gfx_mono_ug_2832hsweg04.h ../src/oled/ssd1306.h ../src/asf.h \
+ ../src/config/conf_board.h ../src/oled/gfx_mono.h \
+ ../src/oled/gfx_mono_ug_2832hsweg04.h ../src/oled/gfx_mono_generic.h \
+ ../src/oled/gfx_mono_framebuffer.h ../src/oled/gfx_mono_text.h \
+ ../src/oled/sysfont.h ../src/config/conf_sysfont.h \
+ ../src/oled/gfx_mono_text.h
 
 ../src/asf.h:
 
@@ -484,41 +481,15 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 
 ../src/ASF/common/services/delay/sam/cycle_counter.h:
 
-../src/ASF/common/services/gfx/gfx.h:
-
-c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-none-eabi\include\assert.h:
-
-../src/ASF/common/services/gfx/gfx_ili9341_sdt028atft.h:
-
-../src/ASF/common/components/display/ili9341/ili9341.h:
-
-../src/ASF/common/services/ioport/ioport.h:
-
-../src/ASF/common/services/ioport/sam/ioport_pio.h:
-
-../src/config/conf_ili9341.h:
-
-../src/ASF/common/services/spi/sam_spi/spi_master.h:
-
-../src/ASF/sam/drivers/spi/spi.h:
-
-../src/config/conf_spi_master.h:
-
-../src/ASF/common/services/gfx/gfx_generic.h:
-
-../src/ASF/common/services/gfx/sysfont.h:
-
-../src/config/conf_sysfont.h:
-
-../src/ASF/common/services/gfx/gfx.h:
-
-../src/ASF/common/services/gfx/gfx_text.h:
-
 ../src/ASF/common/services/gpio/gpio.h:
 
 ../src/ASF/common/services/gpio/sam_gpio/sam_gpio.h:
 
 ../src/ASF/sam/drivers/pio/pio.h:
+
+../src/ASF/common/services/ioport/ioport.h:
+
+../src/ASF/common/services/ioport/sam/ioport_pio.h:
 
 ../src/ASF/sam/drivers/mpu/mpu.h:
 
@@ -528,6 +499,32 @@ c:\program\ files\ (x86)\atmel\studio\7.0\toolchain\arm\arm-gnu-toolchain\arm-no
 
 ../src/ASF/sam/boards/same70_xplained/led.h:
 
+../src/ASF/sam/drivers/spi/spi.h:
+
 ../src/ASF/sam/drivers/pio/pio_handler.h:
 
 ../src/notas.h:
+
+../src/oled/gfx_mono_ug_2832hsweg04.h:
+
+../src/oled/ssd1306.h:
+
+../src/asf.h:
+
+../src/config/conf_board.h:
+
+../src/oled/gfx_mono.h:
+
+../src/oled/gfx_mono_ug_2832hsweg04.h:
+
+../src/oled/gfx_mono_generic.h:
+
+../src/oled/gfx_mono_framebuffer.h:
+
+../src/oled/gfx_mono_text.h:
+
+../src/oled/sysfont.h:
+
+../src/config/conf_sysfont.h:
+
+../src/oled/gfx_mono_text.h:

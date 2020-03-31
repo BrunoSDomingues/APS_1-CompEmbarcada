@@ -1,3 +1,5 @@
+// vim:tabstop=4:shiftwidth=4:noexpandtab
+
 /**
  * 5o Semestre - Engenharia da Computacao
  * APS 1 - Musical
@@ -9,12 +11,13 @@
 
 #include "asf.h"
 #include "notas.h"
+#include "gfx_mono_ug_2832hsweg04.h"
+#include "gfx_mono_text.h"
+#include "sysfont.h"
 
 /************************************************************************/
 /* defines                                                              */
 /************************************************************************/
-
-// LEDs
 
 // LED do SAME70
 #define LED_PIO PIOC						// periferico que controla o LED
@@ -22,33 +25,15 @@
 #define LED_PIO_IDX 8						// ID do LED no PIO
 #define LED_PIO_IDX_MASK (1 << LED_PIO_IDX) // Mascara para CONTROLARMOS o LED
 
-// LED do play (LED1)
-#define LED1_PIO PIOA
-#define LED1_PIO_ID ID_PIOA
-#define LED1_PIO_IDX 0
-#define LED1_PIO_IDX_MASK (1u << LED1_PIO_IDX)
-
-// LED do pause (LED2)
-#define LED2_PIO PIOC
-#define LED2_PIO_ID ID_PIOC
-#define LED2_PIO_IDX 30
-#define LED2_PIO_IDX_MASK (1u << LED2_PIO_IDX)
-
-// LED do next (LED3)
-#define LED3_PIO PIOB
-#define LED3_PIO_ID ID_PIOB
-#define LED3_PIO_IDX 2
-#define LED3_PIO_IDX_MASK (1 << LED3_PIO_IDX)
-
 // Botoes
 
-// Botao play (BUTTON 1)
+// Botao play/pause (BUTTON 1)
 #define BUT1_PIO PIOD
 #define BUT1_PIO_ID ID_PIOD
 #define BUT1_PIO_IDX 28
 #define BUT1_PIO_IDX_MASK (1u << BUT1_PIO_IDX)
 
-// Botao pause (BUTTON 2)
+// Botao previous (BUTTON 2)
 #define BUT2_PIO PIOC
 #define BUT2_PIO_ID 12
 #define BUT2_PIO_IDX 31
@@ -66,11 +51,12 @@
 #define BUZ_PIO_IDX 13						 // ID do Buzzer no PIO
 #define BUZ_PIO_IDX_MASK (1u << BUZ_PIO_IDX) // Mascara para CONTROLARMOS o Buzzer
 
-#define new_song(song, n, t){                   \
+#define new_song(song, n, t)                    \
+	{                                           \
 		song.notes = n;                         \
 		song.tempos = t;                        \
 		song.length = sizeof(n) / sizeof(n[0]); \
-}
+	}
 
 /************************************************************************/
 /* structs                                                              */
@@ -80,7 +66,8 @@ typedef struct
 {
 	int *notes;
 	int *tempos;
-	int length;
+	size_t length;
+	char *title;
 } song;
 
 /************************************************************************/
@@ -90,10 +77,34 @@ typedef struct
 void init(void);
 void tone(int freq, int dur);
 void play(int note, int tempo, int compass);
+void next_song(int *choice, int n_songs, song *cur_song, song *songs);
+void prev_song(int *choice, int n_songs, song *cur_song, song *songs);
+void BUT1_callback();
+void BUT2_callback();
+void BUT3_callback();
 
 /************************************************************************/
 /* interrupcoes                                                         */
 /************************************************************************/
+
+volatile char BUT1_flag = 0;
+volatile char BUT2_flag = 0;
+volatile char BUT3_flag = 0;
+
+void BUT1_callback(void)
+{
+	BUT1_flag = 1;
+}
+
+void BUT2_callback(void)
+{
+	BUT2_flag = 1;
+}
+
+void BUT3_callback(void)
+{
+	BUT3_flag = 1;
+}
 
 /************************************************************************/
 /* funcoes                                                              */
@@ -111,24 +122,36 @@ void init(void)
 	// Ativa o PIO na qual o LED foi conectado
 	// para que possamos controlar o LED e os botões
 	pmc_enable_periph_clk(LED_PIO_ID);
-	pmc_enable_periph_clk(BUZ_PIO_ID);
-	pmc_enable_periph_clk(LED1_PIO_ID);
 
-	//Inicializa leds e buzzer como saida
+	//Inicializa LED como saida
 	pio_set_output(LED_PIO, LED_PIO_IDX_MASK, 0, 0, 0);
-	pio_set_output(BUZ_PIO, BUZ_PIO_IDX_MASK, 0, 0, 0);
-	pio_set_output(LED1_PIO, LED1_PIO_IDX_MASK, 1, 0, 0);
 
 	// Inicializa PIO dos botoes
 	pmc_enable_periph_clk(BUT1_PIO_ID);
+	pmc_enable_periph_clk(BUT2_PIO_ID);
 	pmc_enable_periph_clk(BUT3_PIO_ID);
 
 	// configura pinos ligado aos botoes como entrada com um pull-up.
-	pio_set_input(BUT1_PIO_ID, BUT1_PIO_IDX_MASK, PIO_DEFAULT);
-	pio_pull_up(BUT1_PIO_ID, BUT1_PIO_IDX_MASK, 1);
+	pio_configure(BUT1_PIO, PIO_INPUT, BUT1_PIO_IDX_MASK, PIO_PULLUP);
+	pio_configure(BUT2_PIO, PIO_INPUT, BUT2_PIO_IDX_MASK, PIO_PULLUP);
+	pio_configure(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK, PIO_PULLUP);
 
-	pio_set_input(BUT3_PIO_ID, BUT3_PIO_IDX_MASK, PIO_DEFAULT);
-	pio_pull_up(BUT3_PIO_ID, BUT3_PIO_IDX_MASK, 1);
+	NVIC_EnableIRQ(BUT1_PIO_ID);
+	NVIC_SetPriority(BUT1_PIO_ID, 6); // Priority 1
+
+	NVIC_EnableIRQ(BUT3_PIO_ID);
+	NVIC_SetPriority(BUT3_PIO_ID, 5); // Priority 1
+
+	pio_enable_interrupt(BUT1_PIO, BUT1_PIO_IDX_MASK);
+	pio_enable_interrupt(BUT3_PIO, BUT3_PIO_IDX_MASK);
+
+	// Incializacao do buzzer
+	pmc_enable_periph_clk(BUZ_PIO_ID);
+	pio_set_output(BUZ_PIO, BUZ_PIO_IDX_MASK, 0, 0, 0);
+
+	// Interrupt
+	pio_handler_set(BUT1_PIO, BUT1_PIO_ID, BUT1_PIO_IDX_MASK, PIO_IT_FALL_EDGE, BUT1_callback);
+	pio_handler_set(BUT3_PIO, BUT3_PIO_ID, BUT3_PIO_IDX_MASK, PIO_IT_FALL_EDGE, BUT3_callback);
 }
 
 void tone(int freq, int dur)
@@ -153,16 +176,25 @@ void tone(int freq, int dur)
 void play(int note, int tempo, int compass)
 {
 	int noteDuration = compass / tempo;
-
 	tone(note, noteDuration);
 	int pauseBetweenNotes = noteDuration * 1.30;
 	delay_ms(pauseBetweenNotes);
 }
 
-void next_song(int *choice, int n_songs)
+void next_song(int *choice, int n_songs, song *cur_song, song *songs)
 {
 	*choice = (*choice + 1) % n_songs;
-	// TODO Mudar algum indicador aqui
+	*cur_song = songs[*choice];
+}
+
+void prev_song(int *choice, int n_songs, song *cur_song, song *songs)
+{
+	if (*choice == 0) {
+		*choice = n_songs - 1;
+		} else {
+		*choice = *choice - 1;
+	}
+	*cur_song = songs[*choice];
 }
 
 /************************************************************************/
@@ -174,54 +206,78 @@ void next_song(int *choice, int n_songs)
 int main(void)
 {
 	// inicializa sistema e IOs
+	board_init();
+	sysclk_init();
 	init();
+	delay_init();
 
-	int n_songs = 2;
+	const int n_songs = 3;
 	int choice = 0;
+	unsigned char pause = 1;
 
-	song s1, s2, cur_song;
+	song s1, s2, s3, cur_song;
 
 	new_song(s1, n1, t1);
+	s1.title = &"Mario 1";
+	
 	new_song(s2, n2, t2);
+	s2.title = &"Mario 2";
+	
+	new_song(s3, n3, t3);
+	s3.title = &"Take on Me";
 
-	song songs[] = {s1, s2};
+	song songs[] = {s1, s2, s3};
 
-	// super loop
-	// aplicacoes embarcadas não devem sair do while(1).
+	size_t i = 0;
+	cur_song = songs[0];
 
-	// Botão play  (BUTTON 1)
-	// Botão pause (BUTTON 2)
-	// Botão next  (BUTTON 3)
+	
+	
+	// Botão play/pause  (BUTTON 1)
+	BUT1_flag = 0;
+	// Botão previous	 (BUTTON 2)
+	BUT2_flag = 0;
+	// Botão next        (BUTTON 3)
+	BUT3_flag = 0;
+	
+	gfx_mono_ssd1306_init();
+	gfx_mono_draw_string(songs[choice].title, 10, 10, &sysfont);
+
 	while (1)
 	{
-		if (pio_get(BUT1_PIO, PIO_INPUT, BUT1_PIO_IDX_MASK) == 0)
-		{ // Play
-			pio_set(PIOA, LED1_PIO_IDX_MASK);
-			delay_ms(100);
-			pio_clear(PIOA, LED1_PIO_IDX_MASK);
-
-		musica:;
-			cur_song = songs[choice];
-			const int len = cur_song.length;
-			const int *s = cur_song.notes;
-			const int *t = cur_song.tempos;
-
-			for (int i = 0; i < len; i++)
-			{
-				if (pio_get(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK) == 0)
-				{ // Change
-					next_song(&choice, n_songs);
-					delay_ms(300);
-					goto musica;
-				}
-				play(s[i], t[i], 800);
-			}
+		if (pause) pmc_sleep(SAM_PM_SMODE_SLEEP_WFI); // Sleep until interrupt happens
+		
+		if (BUT2_flag){ // Change
+			BUT2_flag = 0;
+			prev_song(&choice, n_songs, &cur_song, songs);
+			i = 0;
+			gfx_mono_draw_string("           ", 10, 10, &sysfont);
+			gfx_mono_draw_string(songs[choice].title, 10, 10, &sysfont);
 		}
 
-		if (pio_get(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK) == 0)
-		{ // Change
-			next_song(&choice, n_songs);
-			delay_ms(300);
+		if (BUT3_flag){ // Change
+			BUT3_flag = 0;
+			next_song(&choice, n_songs, &cur_song, songs);
+			i = 0;
+			gfx_mono_draw_string("           ", 10, 10, &sysfont);
+			gfx_mono_draw_string(songs[choice].title, 10, 10, &sysfont);
+		}
+
+		if (BUT1_flag){ // Pause or play
+			if (pause == 1) pause = 0;
+			else pause = 1;
+			BUT1_flag = 0;
+		}
+
+		if (!pause){
+			if (i < cur_song.length){
+				play(cur_song.notes[i], cur_song.tempos[i], 800);
+				i++;
+			}
+			else {
+				pause = 0;
+				i = 0;
+			}
 		}
 	}
 	return 0;
