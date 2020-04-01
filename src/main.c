@@ -137,12 +137,16 @@ void init(void)
 	pio_configure(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK, PIO_PULLUP);
 
 	NVIC_EnableIRQ(BUT1_PIO_ID);
-	NVIC_SetPriority(BUT1_PIO_ID, 6); // Priority 1
+	NVIC_SetPriority(BUT1_PIO_ID, 6);
+
+	NVIC_EnableIRQ(BUT2_PIO_ID);
+	NVIC_SetPriority(BUT2_PIO_ID, 4);
 
 	NVIC_EnableIRQ(BUT3_PIO_ID);
-	NVIC_SetPriority(BUT3_PIO_ID, 5); // Priority 1
+	NVIC_SetPriority(BUT3_PIO_ID, 4);
 
 	pio_enable_interrupt(BUT1_PIO, BUT1_PIO_IDX_MASK);
+	pio_enable_interrupt(BUT2_PIO, BUT2_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT3_PIO, BUT3_PIO_IDX_MASK);
 
 	// Incializacao do buzzer
@@ -151,6 +155,7 @@ void init(void)
 
 	// Interrupt
 	pio_handler_set(BUT1_PIO, BUT1_PIO_ID, BUT1_PIO_IDX_MASK, PIO_IT_FALL_EDGE, BUT1_callback);
+	pio_handler_set(BUT2_PIO, BUT2_PIO_ID, BUT2_PIO_IDX_MASK, PIO_IT_FALL_EDGE, BUT2_callback);
 	pio_handler_set(BUT3_PIO, BUT3_PIO_ID, BUT3_PIO_IDX_MASK, PIO_IT_FALL_EDGE, BUT3_callback);
 }
 
@@ -230,8 +235,6 @@ int main(void)
 
 	size_t i = 0;
 	cur_song = songs[0];
-
-	
 	
 	// Botão play/pause  (BUTTON 1)
 	BUT1_flag = 0;
