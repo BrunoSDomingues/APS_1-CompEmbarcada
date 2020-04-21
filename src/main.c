@@ -28,22 +28,25 @@
 // Botoes
 
 // Botao play/pause (BUTTON 1)
-#define BUT1_PIO PIOD
-#define BUT1_PIO_ID ID_PIOD
-#define BUT1_PIO_IDX 28
-#define BUT1_PIO_IDX_MASK (1u << BUT1_PIO_IDX)
+#define BUT1_PIO				PIOD
+#define BUT1_PIO_ID				ID_PIOD
+#define BUT1_PIO_IDX			28
+#define BUT1_PIO_IDX_MASK		(1u << BUT1_PIO_IDX)
+#define BUT1_PRIORITY			6
 
 // Botao previous (BUTTON 2)
-#define BUT2_PIO PIOC
-#define BUT2_PIO_ID 12
-#define BUT2_PIO_IDX 31
-#define BUT2_PIO_IDX_MASK (1u << BUT2_PIO_IDX)
+#define BUT2_PIO				PIOC
+#define BUT2_PIO_ID				12
+#define BUT2_PIO_IDX			31
+#define BUT2_PIO_IDX_MASK		(1u << BUT2_PIO_IDX)
+#define BUT2_PRIORITY			4
 
 // Botao next (BUTTON 3)
-#define BUT3_PIO PIOA
-#define BUT3_PIO_ID ID_PIOA
-#define BUT3_PIO_IDX 19
-#define BUT3_PIO_IDX_MASK (1u << BUT3_PIO_IDX)
+#define BUT3_PIO				PIOA
+#define BUT3_PIO_ID				ID_PIOA
+#define BUT3_PIO_IDX			19
+#define BUT3_PIO_IDX_MASK		(1u << BUT3_PIO_IDX)
+#define BUT3_PRIORITY			4
 
 // Configuracoes do Buzzer
 #define BUZ_PIO PIOC						 // periferico que controla o Buzzer
@@ -137,13 +140,13 @@ void init(void)
 	pio_configure(BUT3_PIO, PIO_INPUT, BUT3_PIO_IDX_MASK, PIO_PULLUP);
 
 	NVIC_EnableIRQ(BUT1_PIO_ID);
-	NVIC_SetPriority(BUT1_PIO_ID, 6);
+	NVIC_SetPriority(BUT1_PIO_ID, BUT1_PRIORITY);
 
 	NVIC_EnableIRQ(BUT2_PIO_ID);
-	NVIC_SetPriority(BUT2_PIO_ID, 4);
+	NVIC_SetPriority(BUT2_PIO_ID, BUT2_PRIORITY);
 
 	NVIC_EnableIRQ(BUT3_PIO_ID);
-	NVIC_SetPriority(BUT3_PIO_ID, 4);
+	NVIC_SetPriority(BUT3_PIO_ID, BUT3_PRIORITY);
 
 	pio_enable_interrupt(BUT1_PIO, BUT1_PIO_IDX_MASK);
 	pio_enable_interrupt(BUT2_PIO, BUT2_PIO_IDX_MASK);
