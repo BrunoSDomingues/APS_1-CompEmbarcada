@@ -26,7 +26,7 @@
 #define LED_PIO					PIOC					// periferico que controla o LED
 #define LED_PIO_ID				ID_PIOC					// ID do periférico PIOC (controla LED)
 #define LED_PIO_IDX				8						// ID do LED no PIO
-#define LED_PIO_IDX_MASK		(1 << LED_PIO_IDX)		// Mascara para CONTROLARMOS o LED
+#define LED_PIO_IDX_MASK		(1u << LED_PIO_IDX)		// Mascara para CONTROLARMOS o LED
 
 // Botoes
 
@@ -52,10 +52,10 @@
 #define BUT3_PRIORITY			4
 
 // Configuracoes do Buzzer
-#define BUZ_PIO PIOC						 // periferico que controla o Buzzer
-#define BUZ_PIO_ID ID_PIOC					 // ID do periférico PIOC (controla Buzzer)
-#define BUZ_PIO_IDX 13						 // ID do Buzzer no PIO
-#define BUZ_PIO_IDX_MASK (1u << BUZ_PIO_IDX) // Mascara para CONTROLARMOS o Buzzer
+#define BUZ_PIO					PIOC						// periferico que controla o Buzzer
+#define BUZ_PIO_ID				ID_PIOC						// ID do periférico PIOC (controla Buzzer)
+#define BUZ_PIO_IDX				13							// ID do Buzzer no PIO
+#define BUZ_PIO_IDX_MASK		(1u << BUZ_PIO_IDX)			// Mascara para CONTROLARMOS o Buzzer
 
 #define new_song(song, n, t)                    \
 	{                                           \
