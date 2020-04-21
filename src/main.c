@@ -19,11 +19,14 @@
 /* defines                                                              */
 /************************************************************************/
 
+// Compasso base
+#define TEMPO					800
+
 // LED do SAME70
-#define LED_PIO PIOC						// periferico que controla o LED
-#define LED_PIO_ID ID_PIOC					// ID do periférico PIOC (controla LED)
-#define LED_PIO_IDX 8						// ID do LED no PIO
-#define LED_PIO_IDX_MASK (1 << LED_PIO_IDX) // Mascara para CONTROLARMOS o LED
+#define LED_PIO					PIOC					// periferico que controla o LED
+#define LED_PIO_ID				ID_PIOC					// ID do periférico PIOC (controla LED)
+#define LED_PIO_IDX				8						// ID do LED no PIO
+#define LED_PIO_IDX_MASK		(1 << LED_PIO_IDX)		// Mascara para CONTROLARMOS o LED
 
 // Botoes
 
@@ -82,6 +85,8 @@ void tone(int freq, int dur);
 void play(int note, int tempo, int compass);
 void next_song(int *choice, int n_songs, song *cur_song, song *songs);
 void prev_song(int *choice, int n_songs, song *cur_song, song *songs);
+void write_song_title(char* status);
+void clear_display();
 void BUT1_callback();
 void BUT2_callback();
 void BUT3_callback();
@@ -205,6 +210,14 @@ void prev_song(int *choice, int n_songs, song *cur_song, song *songs)
 	*cur_song = songs[*choice];
 }
 
+void write_song_title(char* status) {
+	gfx_mono_draw_string(status, 10, 10, &sysfont);
+}
+
+void clear_display() {
+	gfx_mono_draw_string("		", 10, 10, &sysfont);
+}
+
 /************************************************************************/
 /* Main                                                                 */
 /************************************************************************/
@@ -247,7 +260,7 @@ int main(void)
 	BUT3_flag = 0;
 	
 	gfx_mono_ssd1306_init();
-	gfx_mono_draw_string(songs[choice].title, 10, 10, &sysfont);
+	write_song_title(songs[choice].title);
 
 	while (1)
 	{
@@ -257,16 +270,16 @@ int main(void)
 			BUT2_flag = 0;
 			prev_song(&choice, n_songs, &cur_song, songs);
 			i = 0;
-			gfx_mono_draw_string("           ", 10, 10, &sysfont);
-			gfx_mono_draw_string(songs[choice].title, 10, 10, &sysfont);
+			clear_display();
+			write_song_title(songs[choice].title);
 		}
 
 		if (BUT3_flag){ // Change
 			BUT3_flag = 0;
 			next_song(&choice, n_songs, &cur_song, songs);
 			i = 0;
-			gfx_mono_draw_string("           ", 10, 10, &sysfont);
-			gfx_mono_draw_string(songs[choice].title, 10, 10, &sysfont);
+			clear_display();
+			write_song_title(songs[choice].title);
 		}
 
 		if (BUT1_flag){ // Pause or play
@@ -277,7 +290,7 @@ int main(void)
 
 		if (!pause){
 			if (i < cur_song.length){
-				play(cur_song.notes[i], cur_song.tempos[i], 800);
+				play(cur_song.notes[i], cur_song.tempos[i], TEMPO);
 				i++;
 			}
 			else {
